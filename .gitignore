@@ -1,0 +1,8 @@
+
+*.zip
+*.ipynb
+*.csv
+*.jpg
+.DS_Store
+resources/.DS_Store
+resources/mp250/.DS_Store
