@@ -45,30 +45,59 @@ def build_base_model(arch: str):
 
 
 
-
-
 def vectorized_gc_distance(latitudes, longitudes, latitudes_gt, longitudes_gt):
-#     latitudes = latitudes * 180.0 - 90.0
-#     longitudes = longitudes * 360.0 - 180.0   #将0-1之间的值映射到经纬度
+    """
+    计算两个经纬度坐标点之间的球面距离
+    :param lat1: 第一个点的纬度
+    :param lon1: 第一个点的经度
+    :param lat2: 第二个点的纬度
+    :param lon2: 第二个点的经度
+    :return: 两个点之间的距离（单位：千米）
+    """
+    R = 6371.0  # 地球半径（单位：千米）
+    latitudes = torch.tensor(latitudes, dtype=torch.float32) if not isinstance(latitudes, torch.Tensor) else latitudes
+    longitudes = torch.tensor(longitudes, dtype=torch.float32) if not isinstance(longitudes, torch.Tensor) else longitudes
+    latitudes_gt = torch.tensor(latitudes_gt, dtype=torch.float32) if not isinstance(latitudes_gt, torch.Tensor) else latitudes_gt
+    longitudes_gt = torch.tensor(longitudes_gt, dtype=torch.float32) if not isinstance(longitudes_gt, torch.Tensor) else longitudes_gt
+    
+    # 将角度转换为弧度
+    lat1_rad = torch.deg2rad(latitudes)
+    lon1_rad = torch.deg2rad(longitudes)
+    lat2_rad = torch.deg2rad(latitudes_gt)
+    lon2_rad = torch.deg2rad(longitudes_gt)
+
+    # 经纬度差
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    # 使用球面余弦定理计算距离
+    a = torch.sin(dlat / 2)**2 + torch.cos(lat1_rad) * torch.cos(lat2_rad) * torch.sin(dlon / 2)**2
+    c = 2 * torch.atan2(torch.sqrt(a), torch.sqrt(1 - a))
+
+    distance = R * c
+    return distance
+
+
+# def vectorized_gc_distance(latitudes, longitudes, latitudes_gt, longitudes_gt):
+
     
     
-    
-    R = 6371
-    factor_rad = 0.01745329252
-    longitudes = factor_rad * longitudes
-    longitudes_gt = factor_rad * longitudes_gt
-    latitudes = factor_rad * latitudes
-    latitudes_gt = factor_rad * latitudes_gt
-    delta_long = longitudes_gt - longitudes
-    delta_lat = latitudes_gt - latitudes
-    subterm0 = torch.sin(delta_lat / 2) ** 2
-    subterm1 = torch.cos(latitudes) * torch.cos(latitudes_gt)
-    subterm2 = torch.sin(delta_long / 2) ** 2
-    subterm1 = subterm1 * subterm2
-    a = subterm0 + subterm1
-    c = 2 * torch.asin(torch.sqrt(a))
-    gcd = R * c
-    return gcd
+#     R = 6371
+#     factor_rad = 0.01745329252
+#     longitudes = factor_rad * longitudes
+#     longitudes_gt = factor_rad * longitudes_gt
+#     latitudes = factor_rad * latitudes
+#     latitudes_gt = factor_rad * latitudes_gt
+#     delta_long = longitudes_gt - longitudes
+#     delta_lat = latitudes_gt - latitudes
+#     subterm0 = torch.sin(delta_lat / 2) ** 2
+#     subterm1 = torch.cos(latitudes) * torch.cos(latitudes_gt)
+#     subterm2 = torch.sin(delta_long / 2) ** 2
+#     subterm1 = subterm1 * subterm2
+#     a = subterm0 + subterm1
+#     c = 2 * torch.asin(torch.sqrt(a))
+#     gcd = R * c
+#     return gcd
 
 
 def gcd_threshold_eval(gc_dists, thresholds=[1, 25, 200, 750, 2500]):

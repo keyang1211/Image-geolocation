@@ -66,31 +66,40 @@ class resnetregressor(pl.LightningModule):
             output[:, 0] * 90.0,   # 映射到 -90 到 +90 范围
             output[:, 1] * 180.0   # 映射到 -180 到 +180 范围
         ], dim=1)
-        print("-------------------------------------------")
-        print(batch_idx)
         # 检测 output 中是否存在 NaN 值
         has_nan_output = torch.isnan(output).any().item()
         if has_nan_output:
-            print("There is nan in trainoutput")
+            print(f"There is nan in trainoutput in batch{batch_idx}")
         # 检测 output_scaled 中是否存在 NaN 值
         has_nan_output_scaled = torch.isnan(output_scaled).any().item()
         if has_nan_output_scaled:
-            print("There is nan in trainoutput_scaled")
-        
+            print(f"There is nan in trainoutput_scaled in batch{batch_idx}")
         losses = [
             utils_global.vectorized_gc_distance(output_scaled[i][0],output_scaled[i][1], target[0][i],target[1][i])
             for i in range(output.shape[0])
         ]
         # 检查nan值
-        has_nan = any([torch.isnan(loss1).any() for loss1 in losses])
-        if has_nan:
-            print("There is NaN in list losses")
+        # has_nan = any([torch.isnan(loss1).any() for loss1 in losses])
+        # if has_nan:
+        #     print(f"There is nan in list losses in batch{batch_idx}")
        
+        nan_index = next((i for i, loss1 in enumerate(losses) if torch.isnan(loss1).any()), None)
+
+        if nan_index is not None:
+            print(f"NaN value found in losses at index {nan_index} in batch {batch_idx}")
+    
+            # 输出output_scaled和target中对应位置的数据
+            problematic_output = output[nan_index]
+            problematic_output_sca = output_scaled[nan_index]
+            problematic_target = target[:, nan_index]
+            print(f"Problematic output data: {problematic_output}")
+            print(f"Problematic output_scaled data: {problematic_output_sca}")
+            print(f"Problematic target data: {problematic_target}")
+
         loss = sum(losses)
         has_nan = torch.isnan(loss)
         if has_nan:
-            print("There is NaN in total loss")
-       
+            print(f"There is nan in total loss in batch{batch_idx}")
         errors = [loss.item() for loss in losses]
         thissize = output.shape[0]
         output = {
@@ -340,9 +349,8 @@ class resnetregressor(pl.LightningModule):
 
         tfm = torchvision.transforms.Compose(
             [
-                torchvision.transforms.Resize(256),
-                torchvision.transforms.CenterCrop(224),
-                torchvision.transforms.AutoAugment(),
+                torchvision.transforms.RandomHorizontalFlip(),
+                torchvision.transforms.RandomResizedCrop(224, scale=(0.66, 1.0)),
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(
                     (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
