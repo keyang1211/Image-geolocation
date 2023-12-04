@@ -91,7 +91,7 @@ class resnetregressor(pl.LightningModule):
             # 输出output_scaled和target中对应位置的数据
             problematic_output = output[nan_index]
             problematic_output_sca = output_scaled[nan_index]
-            problematic_target = target[:, nan_index]
+            problematic_target = [target[0][nan_index],target[1][nan_index]]
             print(f"Problematic output data: {problematic_output}")
             print(f"Problematic output_scaled data: {problematic_output_sca}")
             print(f"Problematic target data: {problematic_target}")

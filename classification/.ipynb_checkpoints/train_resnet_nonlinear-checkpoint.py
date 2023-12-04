@@ -76,10 +76,7 @@ class resnetregressor(pl.LightningModule):
             for i in range(output_scaled.shape[0])
         ]
         
-        # 检查nan值
-#         has_nan = any([torch.isnan(loss1).any() for loss1 in losses])
-#         if has_nan:
-#             print(f"There is NaN in list losses in batch{batch_idx}")
+  
         nan_index = next((i for i, loss1 in enumerate(losses) if torch.isnan(loss1).any()), None)
 
         if nan_index is not None:
@@ -88,7 +85,7 @@ class resnetregressor(pl.LightningModule):
             # 输出output_scaled和target中对应位置的数据
             problematic_output = output[nan_index]
             problematic_output_sca = output_scaled[nan_index]
-            problematic_target = target[:, nan_index]
+            problematic_target = [target[0][nan_index],target[1][nan_index]]
             print(f"Problematic output data: {problematic_output}")
             print(f"Problematic output_scaled data: {problematic_output_sca}")
             print(f"Problematic target data: {problematic_target}")
