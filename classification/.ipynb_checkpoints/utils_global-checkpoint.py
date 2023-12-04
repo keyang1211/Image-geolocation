@@ -45,7 +45,7 @@ def build_base_model(arch: str):
 
 
 
-def vectorized_gc_distance(latitudes, longitudes, latitudes_gt, longitudes_gt):
+def vectorized_gc_distance(lat1, lon1, lat2, lon2):
     """
     计算两个经纬度坐标点之间的球面距离
     :param lat1: 第一个点的纬度
@@ -54,28 +54,29 @@ def vectorized_gc_distance(latitudes, longitudes, latitudes_gt, longitudes_gt):
     :param lon2: 第二个点的经度
     :return: 两个点之间的距离（单位：千米）
     """
-    R = 6371.0  # 地球半径（单位：千米）
-    latitudes = torch.tensor(latitudes, dtype=torch.float32) if not isinstance(latitudes, torch.Tensor) else latitudes
-    longitudes = torch.tensor(longitudes, dtype=torch.float32) if not isinstance(longitudes, torch.Tensor) else longitudes
-    latitudes_gt = torch.tensor(latitudes_gt, dtype=torch.float32) if not isinstance(latitudes_gt, torch.Tensor) else latitudes_gt
-    longitudes_gt = torch.tensor(longitudes_gt, dtype=torch.float32) if not isinstance(longitudes_gt, torch.Tensor) else longitudes_gt
+    lat1=lat1.to(torch.float64)
+    lon1=lon1.to(torch.float64)
+    lat2=lat2.to(torch.float64)
+    lon2=lon2.to(torch.float64)
     
+    R = 6371.0  # 地球半径（单位：千米）
     # 将角度转换为弧度
-    lat1_rad = torch.deg2rad(latitudes)
-    lon1_rad = torch.deg2rad(longitudes)
-    lat2_rad = torch.deg2rad(latitudes_gt)
-    lon2_rad = torch.deg2rad(longitudes_gt)
+    lat1_rad = torch.deg2rad(lat1)
+    lon1_rad = torch.deg2rad(lon1)
+    lat2_rad = torch.deg2rad(lat2)
+    lon2_rad = torch.deg2rad(lon2)
 
     # 经纬度差
     dlat = lat2_rad - lat1_rad
     dlon = lon2_rad - lon1_rad
-
+    
     # 使用球面余弦定理计算距离
     a = torch.sin(dlat / 2)**2 + torch.cos(lat1_rad) * torch.cos(lat2_rad) * torch.sin(dlon / 2)**2
     c = 2 * torch.atan2(torch.sqrt(a), torch.sqrt(1 - a))
 
     distance = R * c
     return distance
+
 
 
 # def vectorized_gc_distance(latitudes, longitudes, latitudes_gt, longitudes_gt):
