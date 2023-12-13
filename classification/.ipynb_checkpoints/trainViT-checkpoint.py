@@ -326,7 +326,7 @@ class ViTregressor(pl.LightningModule):
         
     def configure_optimizers(self):
 
-        optim_feature_extrator =torch.optim.SGD(
+        optim_feature_extrator =torch.optim.AdamW(
             self.parameters(), **self.hparams.modelparams.optim["params"]
         )
         Ascheduler = torch.optim.lr_scheduler.StepLR(
