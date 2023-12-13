@@ -8,13 +8,13 @@ model_params:
     # SGD
     params:
       lr: 0.001
-      momentum: 0.8
-      weight_decay: 0.05
+      momentum: 0.9
+      weight_decay: 0.005
   scheduler:
     # MultiStepLR
     params:
-      gamma: 0.5
-      milestones: [4, 8, 12, 16, 17, 18, 19, 20]
+      gamma: 0.1
+      step_size: 2
   # images stored in chunks
   msgpack_train_dir: /work3/s212495/resources/images/mp16
   msgpack_val_dir: /work3/s212495/resources/images/yfcc25600
@@ -36,13 +36,13 @@ model_params:
 # paramters for pytorch lightning trainer class
 trainer_params:
   max_epochs: 100
-  min_epochs: 10
-  precision: 16-mixed
+  min_epochs: 9
   num_nodes: 1
-  gradient_clip_val: 1.0
   reload_dataloaders_every_n_epochs: 1 
-  
+  precision: 16-mixed
+  gradient_clip_val: 1.0
   
 # gradient_clip_val: 1.0 解决梯度爆炸
 #   gradient_clip_algorithm: value
+# precision: 16-mixed
 

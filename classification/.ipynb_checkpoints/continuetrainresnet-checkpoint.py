@@ -30,7 +30,6 @@ def main():
     model_params = config["model_params"]
     trainer_params = config["trainer_params"]
 
-    utils_global.check_is_valid_torchvision_architecture(model_params["arch"])
 
     out_dir = Path(config["out_dir"]) / datetime.now().strftime("%y%m%d-%H%M")
     out_dir.mkdir(exist_ok=True, parents=True)
@@ -42,7 +41,7 @@ def main():
     checkpoint_dir = out_dir / "ckpts" 
     checkpointer = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir,
                                                 filename='{epoch}-{the_val_loss:.2f}',
-                                                save_top_k = 10,
+                                                save_top_k = 5,
                                                 save_last = True,
                                                 monitor = 'the_val_loss', 
                                                 mode = 'min')

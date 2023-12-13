@@ -30,9 +30,9 @@ class resnetregressor(pl.LightningModule):
         model, nfeatures = utils_global.build_base_model(self.hparams.modelparams.arch)
 
         regressor = torch.nn.Sequential(
-            torch.nn.Linear(nfeatures, 128),  
+            torch.nn.Linear(nfeatures, 1024),  
             torch.nn.ReLU(),  
-            torch.nn.Linear(128, 2),
+            torch.nn.Linear(1024, 2),
             torch.nn.Tanh()# 输出两个数字（-1 - 1）
         )
 
@@ -192,9 +192,9 @@ class resnetregressor(pl.LightningModule):
             "ACC2000" : error_2000
         }
         self.log("val_loss", loss)
-        # print("-------------valoutput----------")
-        # print(output)
-        # print("------------------------------------------------------")
+        print("-------------valoutput----------")
+        print(output)
+        print("------------------------------------------------------")
         self.validation_step_outputs.append(output)
         return output
     
@@ -239,7 +239,7 @@ class resnetregressor(pl.LightningModule):
         logging.info("500_accratio: %s", error_500_ratio)
         logging.info("1000_accratio: %s", error_1000_ratio)
         logging.info("2000_accratio: %s", error_2000_ratio)
-        self.log("the_val_loss", avg_loss)
+        self.log("the_val_loss", avg_loss.item())
         self.log("100_accratio", error_100_ratio)
         self.log("500_accratio", error_500_ratio)
         self.log("1000_accratio", error_1000_ratio)
@@ -320,11 +320,10 @@ class resnetregressor(pl.LightningModule):
         
         
     def configure_optimizers(self):
-
-        optim_feature_extrator = torch.optim.SGD(
+        optim_feature_extrator =torch.optim.SGD(
             self.parameters(), **self.hparams.modelparams.optim["params"]
         )
-        Ascheduler = torch.optim.lr_scheduler.MultiStepLR(
+        Ascheduler = torch.optim.lr_scheduler.StepLR(
             optim_feature_extrator, **self.hparams.modelparams.scheduler["params"]
         )
         
@@ -350,6 +349,7 @@ class resnetregressor(pl.LightningModule):
                 
                 torchvision.transforms.RandomHorizontalFlip(),
                 torchvision.transforms.RandomResizedCrop(224, scale=(0.66, 1.0)),
+                # torchvision.transforms.RandAugment(),
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(
                     (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)

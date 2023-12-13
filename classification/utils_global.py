@@ -54,10 +54,10 @@ def vectorized_gc_distance(lat1, lon1, lat2, lon2):
     :param lon2: 第二个点的经度
     :return: 两个点之间的距离（单位：千米）
     """
-    lat1=lat1.to(torch.float64)
-    lon1=lon1.to(torch.float64)
-    lat2=lat2.to(torch.float64)
-    lon2=lon2.to(torch.float64)
+    lat1=lat1.to(torch.float32)
+    lon1=lon1.to(torch.float32)
+    lat2=lat2.to(torch.float32)
+    lon2=lon2.to(torch.float32)
     
     R = 6371.0  # 地球半径（单位：千米）
     # 将角度转换为弧度
