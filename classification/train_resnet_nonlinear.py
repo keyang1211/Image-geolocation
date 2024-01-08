@@ -101,8 +101,7 @@ class resnetregressor(pl.LightningModule):
         thissize = output_scaled.shape[0]
         output = {
             "loss" : loss,
-            "size" : thissize,
-            "losses" : errors}
+            "size" : thissize}
         self.log("train_loss_batch", loss)
         self.training_step_outputs.append(output)
         return output
