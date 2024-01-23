@@ -3,7 +3,7 @@ model_params:
   arch: resnet152 # model architecture from torchvision namespace
   weights: null # null -> all models are initialized with "ImageNet" weights or path to .ckpt to initialize from pre-trained model
   batch_size: 64
-  val_check_interval: 4000 # validate after x steps (batches) i.e. batch_size*val_check_interval = n images
+  val_check_interval: 8000 # validate after x steps (batches) i.e. batch_size*val_check_interval = n images
   optim:
     # adamw
     params:

@@ -482,7 +482,7 @@ def main():
     checkpoint_dir = out_dir / "ckpts" 
     checkpointer = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir,
                                                 filename='{epoch}-{the_val_loss:.2f}',
-                                                save_top_k = 5,
+                                                save_top_k = 3,
                                                 save_last = True,
                                                 monitor = 'the_val_loss', 
                                                 mode = 'min')

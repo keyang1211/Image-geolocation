@@ -236,7 +236,7 @@ class VisionTransformer(nn.Module):
         # (n, hidden_dim, n_h, n_w) -> (n, hidden_dim, (n_h * n_w))
         x = x.reshape(n, self.hidden_dim, n_h * n_w)
 
-        # (n, hidden_dim, (n_h * n_w)) -> (n, (n_h * n_w), hidden_dim)
+        # (n, hidden_dim, (n_h * n_w)) -> (n, (n_h * n_w), hidden_dim) (batchsize,块数，投影的嵌入维度)
         # The self attention layer expects inputs in the format (N, S, E)
         # where S is the source sequence length, N is the batch size, E is the
         # embedding dimension
@@ -253,7 +253,7 @@ class VisionTransformer(nn.Module):
         batch_class_token = self.class_token.expand(n, -1, -1)
         x = torch.cat([batch_class_token, x], dim=1)
 
-        x = self.encoder(x)
+        x = self.encoder(x) # 这里有pos emb
 
         
         x = x[:, 0]
@@ -261,3 +261,166 @@ class VisionTransformer(nn.Module):
         
 
         return x
+    
+
+class Encoder1(nn.Module):
+    """Transformer Model Encoder for sequence to sequence translation."""
+
+    def __init__(
+        self,
+        seq_length: int,
+        num_layers: int,
+        num_heads: int,
+        hidden_dim: int,
+        mlp_dim: int,
+        dropout: float,
+        attention_dropout: float,
+        norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
+    ):
+        super().__init__()
+        # Note that batch_size is on the first dim because
+        # we have batch_first=True in nn.MultiAttention() by default
+        self.dropout = nn.Dropout(dropout)
+        layers: OrderedDict[str, nn.Module] = OrderedDict()
+        for i in range(num_layers):
+            layers[f"encoder_layer_{i}"] = EncoderBlock(
+                num_heads,
+                hidden_dim,
+                mlp_dim,
+                dropout,
+                attention_dropout,
+                norm_layer,
+            )
+        self.layers = nn.Sequential(layers)
+        self.ln = norm_layer(hidden_dim)
+
+    def forward(self, input: torch.Tensor):
+        torch._assert(input.dim() == 3, f"Expected (batch_size, seq_length, hidden_dim) got {input.shape}")
+        return self.ln(self.layers(self.dropout(input)))
+    
+    
+    
+class MAEencoder(nn.Module):
+        
+    def __init__(
+        self,
+        image_size: int,
+        patch_size: int,
+        num_layers: int,
+        num_heads: int,
+        hidden_dim: int,
+        mlp_dim: int,
+        dropout: float = 0.0,
+        attention_dropout: float = 0.0,
+        norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
+    ):
+        super().__init__()
+        torch._assert(image_size % patch_size == 0, "Input shape indivisible by patch size!")
+        self.image_size = image_size
+        self.patch_size = patch_size
+        self.hidden_dim = hidden_dim
+        self.mlp_dim = mlp_dim
+        self.attention_dropout = attention_dropout
+        self.dropout = dropout
+        self.norm_layer = norm_layer
+        
+
+        seq_length = (image_size // patch_size) ** 2
+
+        
+        seq_length += 1
+
+        self.encoder = Encoder1(
+            seq_length,
+            num_layers,
+            num_heads,
+            hidden_dim,
+            mlp_dim,
+            dropout,
+            attention_dropout,
+            norm_layer,
+        )
+        self.seq_length = seq_length
+
+    
+    
+
+
+
+    def forward(self, x: torch.Tensor):
+        #输出（batch，lenth，embed）
+
+        x = self.encoder(x) 
+
+        
+    
+
+        
+
+        return x
+    
+        
+class MAEdecoder(nn.Module):
+        
+    def __init__(
+        self,
+        image_size: int,
+        patch_size: int,
+        num_layers: int,
+        num_heads: int,
+        hidden_dim: int,
+        mlp_dim: int,
+        dropout: float = 0.0,
+        attention_dropout: float = 0.0,
+        norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
+    ):
+        super().__init__()
+        torch._assert(image_size % patch_size == 0, "Input shape indivisible by patch size!")
+        self.image_size = image_size
+        self.patch_size = patch_size
+        self.hidden_dim = hidden_dim
+        self.mlp_dim = mlp_dim
+        self.attention_dropout = attention_dropout
+        self.dropout = dropout
+        self.norm_layer = norm_layer
+        
+
+        seq_length = (image_size // patch_size) ** 2
+
+        
+        seq_length += 1
+
+        self.encoder = Encoder1(
+            seq_length,
+            num_layers,
+            num_heads,
+            hidden_dim,
+            mlp_dim,
+            dropout,
+            attention_dropout,
+            norm_layer,
+        )
+        self.seq_length = seq_length
+
+
+        
+
+
+
+
+    def forward(self, x: torch.Tensor):
+
+        
+
+
+
+        x = self.encoder(x) 
+        
+    
+
+        
+
+        return x
+    
+        
+       

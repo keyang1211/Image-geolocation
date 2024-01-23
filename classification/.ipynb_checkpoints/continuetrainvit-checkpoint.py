@@ -41,7 +41,7 @@ def main():
     checkpoint_dir = out_dir / "ckpts" 
     checkpointer = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir,
                                                 filename='{epoch}-{the_val_loss:.2f}',
-                                                save_top_k = 5,
+                                                save_top_k = 3,
                                                 save_last = True,
                                                 monitor = 'the_val_loss', 
                                                 mode = 'min')
@@ -60,7 +60,7 @@ def main():
         enable_progress_bar=progress_bar_refresh_rate,
     )
 
-    trainer.fit(model,ckpt_path="last")
+    trainer.fit(model,ckpt_path="/work3/s212495/data/models/ViT/240119-0853/ckpts/last.ckpt")
 
 
 if __name__ == "__main__":
