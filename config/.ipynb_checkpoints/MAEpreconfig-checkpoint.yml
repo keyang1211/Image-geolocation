@@ -1,0 +1,47 @@
+out_dir: /work3/s212495/data/models/MAEpretrained/
+model_params:
+  arch: MAE # model architecture from torchvision namespace
+  weights: null # null -> all models are initialized with "ImageNet" weights or path to .ckpt to initialize from pre-trained model
+  batch_size: 64
+  val_check_interval: 8000 # validate after x steps (batches) i.e. batch_size*val_check_interval = n images
+  optim:
+    # adamw
+    params:
+      lr: 0.0001
+      weight_decay: 0.01
+  scheduler:
+    # MultiStepLR
+    params:
+      gamma: 0.1
+      step_size: 3
+  # images stored in chunks
+  msgpack_train_dir: /work3/s212495/resources/images/mp16
+  msgpack_val_dir: /work3/s212495/resources/images/yfcc25600
+  # meta information i.e. coordinates for each image
+  train_meta_path: resources/mp16_places365.csv
+  val_meta_path: resources/yfcc25600_places365.csv 
+  test_meta_path: /work3/s212495/resources/images/im2gps3k/im2gps3ktest
+  # mapping from image ids in msgpack dataset to target value(s)
+  # orient: index -> {"img_id": [t1, t2], ...}
+  train_label_mapping: resources/mp16_places365_mapping_h3.json
+  val_label_mapping: resources/yfcc_25600_places365_mapping_h3.json
+  after_train_label_mapping: resources/after_mp16_places365_mapping_h3.json
+  after_val_label_mapping: resources/after_yfcc_25600_places365_mapping_h3.json
+  test_label_mapping: resources/im2gps3k_places365_mapping_h3.json
+  after_test_label_mapping: resources/after_im2gps3k_places365_mapping_h3.json
+  key_img_id: id # image id name for msgpack dataset
+  key_img_encoded: image # image data name for msgpack dataset
+  num_workers_per_loader: 8
+# paramters for pytorch lightning trainer class
+trainer_params:
+  max_epochs: 100
+  min_epochs: 9
+  num_nodes: 1
+  reload_dataloaders_every_n_epochs: 1 
+  precision: 16-mixed
+  gradient_clip_val: 1.0
+  
+# gradient_clip_val: 1.0 解决梯度爆炸
+#   gradient_clip_algorithm: value
+# precision: 16-mixed
+
