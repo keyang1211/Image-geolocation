@@ -16,7 +16,7 @@ import pandas as pd
 
 def main():
 
-    for dataset_type in ["test"]:
+    for dataset_type in ["test1"]:
         with open(config[f"{dataset_type}_label_mapping"]) as f:
             mapping = json.load(f)
 

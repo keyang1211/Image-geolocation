@@ -6,8 +6,8 @@ import pandas as pd
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument("-c", "--config", type=Path, default="resources/im2gps3k_places365.csv")
-    parser.add_argument("-p", "--path", type=Path, default="resources/im2gps3k_places365_mapping_h3.json")
+    parser.add_argument("-c", "--config", type=Path, default="resources/im2gps_places365.csv")
+    parser.add_argument("-p", "--path", type=Path, default="resources/im2gps_places365_mapping_h3.json")
     args = parser.parse_args()
     return args
 
