@@ -281,10 +281,17 @@ class ViTregressor(pl.LightningModule):
         errors = [loss.item() for loss in losses]
         
         num_samples = len(errors)
-        error_100 = sum([1 for error in errors if error <= 100])
-        error_500 = sum([1 for error in errors if  error <= 500])
-        error_1000 = sum([1 for error in errors if  error <= 1000])
-        error_2000 = sum([1 for error in errors if  error <= 2000])
+        error_100 = sum([1 for error in errors if error <= 25])
+        error_500 = sum([1 for error in errors if  error <= 200])
+        error_1000 = sum([1 for error in errors if  error <= 750])
+        error_2000 = sum([1 for error in errors if  error <= 2500])
+        columns = ['ori_lat', 'ori_lon']
+        ori_cord = pd.DataFrame(target,index=columns).T
+        columns1 = ['pred_lat', 'pred_lon']
+        pred_cord = pd.DataFrame(output_scaled,columns=columns1)
+        distance = pd.DataFrame(errors,columns=["distance"])
+        result = pd.concat([ori_cord[['ori_lat', 'ori_lon']], pred_cord[['pred_lat', 'pred_lon']], distance], axis=1)
+
 
         output = {
             "batch_loss" : loss,
@@ -293,7 +300,8 @@ class ViTregressor(pl.LightningModule):
             "num in 100km" : error_100,
             "num in 500km" : error_500,
             "num in 1000km" : error_1000,
-            "num in 2000km" : error_2000
+            "num in 2000km" : error_2000,
+            "result_df" : result
         }
         self.test_outputs.append(output)
         
@@ -311,14 +319,28 @@ class ViTregressor(pl.LightningModule):
         acc_1000 = num_1000/total_num
         acc_2000 = num_2000/total_num
         
+        
+        result_list = [x["result_df"] for x in self.test_outputs]
+        result = pd.concat(result_list, axis=0, ignore_index=True)
+        def tensor_element_to_float(t):
+            return float(t.item()) if isinstance(t, torch.Tensor) and t.numel() == 1 else t
+
+        # 使用 applymap 函数应用上述函数
+        result = result.applymap(tensor_element_to_float)
+        
         self.test_outputs.clear()
         
-        with open('/work3/s212495/test_results.txt', 'w') as file:
+        with open('/work3/s212495/test_results_VIT.txt', 'w') as file:
             file.write(f"Avg Loss: {avg_loss}\n")
-            file.write(f"Accuracy in 100km: {acc_100}\n")
-            file.write(f"Accuracy in 500km: {acc_500}\n")
-            file.write(f"Accuracy in 1000km: {acc_1000}\n")
-            file.write(f"Accuracy in 2000km: {acc_2000}\n")
+            file.write(f"Accuracy in 25km: {acc_100}\n")
+            file.write(f"Accuracy in 200km: {acc_500}\n")
+            file.write(f"Accuracy in 750km: {acc_1000}\n")
+            file.write(f"Accuracy in 2500km: {acc_2000}\n")
+            
+            
+        result.to_csv('/work3/s212495/test_vit.csv', index=False)
+
+        
         
         
         
@@ -468,7 +490,7 @@ def parse_args():
 def main():
     args = parse_args()
     logging.basicConfig(level=logging.INFO, filename="/work3/s212495/trainViT.log")
-    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/ViTlog", name="ViTlog")
+    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/ViTlog", name="last50ViTlog")
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -483,7 +505,7 @@ def main():
     # init 
     model = ViTregressor(modelparams=Namespace(**model_params))
 
-    checkpoint_dir = out_dir / "ckpts" 
+    checkpoint_dir = out_dir / "last50ckpts" 
     checkpointer = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir,
                                                 filename='{epoch}-{the_val_loss:.2f}',
                                                 save_top_k = 3,

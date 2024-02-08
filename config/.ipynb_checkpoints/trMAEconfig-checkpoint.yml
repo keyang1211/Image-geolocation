@@ -1,6 +1,6 @@
-out_dir: /work3/s212495/data/models/MAEpretrained/
+out_dir: /work3/s212495/data/models/trwMAEpre/
 model_params:
-  arch: MAE # model architecture from torchvision namespace
+  arch: wMAEpre # model architecture from torchvision namespace
   weights: null # null -> all models are initialized with "ImageNet" weights or path to .ckpt to initialize from pre-trained model
   batch_size: 64
   val_check_interval: 8000 # validate after x steps (batches) i.e. batch_size*val_check_interval = n images
@@ -12,8 +12,8 @@ model_params:
   scheduler:
     # MultiStepLR
     params:
-      gamma: 0.5
-      milestones: [6,10,13,16,18,20]
+      gamma: 0.1
+      step_size: 3
   # images stored in chunks
   msgpack_train_dir: /work3/s212495/resources/images/mp16
   msgpack_val_dir: /work3/s212495/resources/images/yfcc25600

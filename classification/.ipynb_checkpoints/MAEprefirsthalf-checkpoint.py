@@ -3,16 +3,16 @@ from datetime import datetime
 import json
 import logging
 from pathlib import Path
-from PIL import Image
+
 import yaml
 import torch
 import torch.nn as nn
-import numpy as np
+
 import torchvision
 import pytorch_lightning as pl
 import pandas as pd
 from classification import utils_global,ViTencoder
-from classification.dataset import MsgPackIterableDatasetMultiTargetWithDynLabels,TestsetIterableDataset
+from classification.dataset import MsgPackIterableDatasetfirst50,TestsetIterableDataset,MsgPackIterableDatasetMultiTargetWithDynLabels
 
 
 
@@ -80,7 +80,6 @@ class MAEpretrainencoder(nn.Module):
         # 输出x:(N,newL,embed块)
         if mask_ratio == 0.0:
             return x,0,0
-        
         N, L, D = x.shape  # batch, length, dim
         len_keep = int(L * (1 - mask_ratio))
         
@@ -269,10 +268,10 @@ class MAEpretrain(pl.LightningModule):
         output,mask = self(images)  #output形状为 (batch_size,3,H,W ) mask（batch_size, L）
         ori_img = self.patchify_img(images)
         pred_img = self.patchify_img(output)  #全变成(N, L, patch_size**2 *3)
-        mask1 = mask.unsqueeze(2).expand(-1, -1, self.patch_size**2 * 3)
+        mask = mask.unsqueeze(2).expand(-1, -1, self.patch_size**2 * 3)
         # 只剩下被遮蔽部分
-        ori_img = ori_img * mask1
-        pred_img = pred_img * mask1
+        ori_img = ori_img * mask
+        pred_img = pred_img * mask
         
         loss = (pred_img - ori_img) ** 2
         loss = loss.mean(dim=-1)  # [N, L], mean loss per patch
@@ -300,10 +299,10 @@ class MAEpretrain(pl.LightningModule):
         output,mask = self(images)  #output形状为 (batch_size,3,H,W ) mask（batch_size, L）
         ori_img = self.patchify_img(images)
         pred_img = self.patchify_img(output)  #全变成(N, L, patch_size**2 *3)
-        mask1 = mask.unsqueeze(2).expand(-1, -1, self.patch_size**2 * 3)
+        mask = mask.unsqueeze(2).expand(-1, -1, self.patch_size**2 * 3)
         # 只剩下被遮蔽部分
-        ori_img = ori_img * mask1
-        pred_img = pred_img * mask1
+        ori_img = ori_img * mask
+        pred_img = pred_img * mask
         
         loss = (pred_img - ori_img) ** 2
         loss = loss.mean(dim=-1)  # [N, L], mean loss per patch
@@ -319,62 +318,7 @@ class MAEpretrain(pl.LightningModule):
         epoch_loss = sum(self.validation_step_outputs)
         self.log("val_loss_epoch",epoch_loss)
         self.validation_step_outputs.clear()
-    
-    
-    
-    
-    def test_step(self, batch, batch_idx, dataloader_idx=None):
 
-        images, target = batch #iamge是（batch size，3,H,W），target是两个张量的列表，一个是lat，一个是lon
-        batch_size = images.shape[0]
-        if not isinstance(target, list) and len(target.shape) == 1:
-            target = [target]
-
-        # forward pass
-        output,mask = self(images)  #output形状为 (batch_size,3,H,W ) mask（batch_size, L）
-        ori_img = self.patchify_img(images)
-        pred_img = self.patchify_img(output)  #全变成(N, L, patch_size**2 *3)
-        mask1 = mask.unsqueeze(2).expand(-1, -1, self.patch_size**2 * 3)
-        # 只剩下被遮蔽部分
-        ori_img1 = ori_img * mask1
-        pred_img1 = pred_img * mask1
-        
-        loss = (pred_img1 - ori_img1) ** 2
-        loss = loss.mean(dim=-1)  # [N, L], mean loss per patch
-        loss = loss.mean(dim=-1)
-        output_dicts_list = [{'lat':target[0][i].item(),'lon':target[1][i].item(), 'images':images[i], 'output': output[i], 'loss': loss[i].item()} for i in range(batch_size)]
-
-        
-        
-        self.test_outputs.extend(output_dicts_list)
-    
-
-    def on_test_end(self):
-        result = pd.DataFrame(self.test_outputs)
-
-        
-        result = result.sort_values(by='loss')
-        result = result.head(10).reset_index(drop=True)
-        for i in range(10):
-            image = result["images"][i]
-            normalize_inverse = torchvision.transforms.Normalize(
-                mean=[-0.485/0.229, -0.456/0.224, -0.406/0.225],
-                std=[1/0.229, 1/0.224, 1/0.225])
-            image = normalize_inverse(image)
-            image = torchvision.transforms.ToPILImage()(image)
-            image_path = '/work3/s212495/MAEimg/image_{}.png'.format(i)
-            image.save(image_path)
-            
-            output = result["output"][i]
-            output = normalize_inverse(output)
-            output = torchvision.transforms.ToPILImage()(output)
-            output_path = '/work3/s212495/MAEimg/output_{}.png'.format(i)
-            output.save(output_path)
-        
-        
-        
-        
-        
             
         
     def configure_optimizers(self):
@@ -415,7 +359,7 @@ class MAEpretrain(pl.LightningModule):
             ]
         )
 
-        dataset = MsgPackIterableDatasetMultiTargetWithDynLabels(
+        dataset = MsgPackIterableDatasetfirst50(
             path=self.hparams.modelparams.msgpack_train_dir,
             target_mapping=target_mapping,
             key_img_id=self.hparams.modelparams.key_img_id,
@@ -473,40 +417,6 @@ class MAEpretrain(pl.LightningModule):
         return dataloader
     
     
-    def test_dataloader(self):
-        with open(self.hparams.modelparams.after_test_label_mapping, "r") as f:
-            target_mapping = json.load(f)
-
-        tfm = torchvision.transforms.Compose(
-            [
-                torchvision.transforms.Resize(256),
-                torchvision.transforms.CenterCrop(224),
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize(
-                    (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
-                ),
-            ]
-        )
-        dataset = TestsetIterableDataset(
-            path=self.hparams.modelparams.msgpack_test_dir,
-            target_mapping=target_mapping,
-            shuffle=False,
-            transformation=tfm,
-        )
-
-        dataloader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=self.hparams.modelparams.batch_size,
-            num_workers=self.hparams.modelparams.num_workers_per_loader,
-            pin_memory=True,
-        )
-        print("-------------testdataloader lenth---------------")
-        print(len(dataloader))
-        print("-------------------------------------------------")
-
-        return dataloader
-    
-    
     
     
     
@@ -522,7 +432,7 @@ def parse_args():
 def main():
     args = parse_args()
     logging.basicConfig(level=logging.INFO, filename="/work3/s212495/trainMAE.log")
-    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/MAElog", name="MAElog")
+    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/MAElog", name="MAElogf50")
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -537,7 +447,7 @@ def main():
     # init 
     model = MAEpretrain(modelparams=Namespace(**model_params))
 
-    checkpoint_dir = out_dir / "ckpts" 
+    checkpoint_dir = out_dir / "f50ckpts" 
     checkpointer = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir,
                                                 filename='{epoch}-{val_loss_epoch:.2f}',
                                                 save_top_k = 3,

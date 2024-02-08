@@ -23,7 +23,7 @@ def parse_args():
 def main():
     args = parse_args()
     logging.basicConfig(level=logging.INFO, filename="/work3/s212495/trainresnonlinear.log")
-    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/resnet_nonlinear", name="resnetlog")
+    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/resnet_nonlinear", name="last50resnetlog")
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -38,7 +38,7 @@ def main():
     # init 
     model = train_resnet_nonlinear.resnetregressor(modelparams=Namespace(**model_params))
 
-    checkpoint_dir = out_dir / "ckpts" 
+    checkpoint_dir = out_dir / "last50ckpts" 
     checkpointer = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir,
                                                 filename='{epoch}-{the_val_loss:.2f}',
                                                 save_top_k = 3,
@@ -60,7 +60,7 @@ def main():
         enable_progress_bar=progress_bar_refresh_rate,
     )
 
-    trainer.fit(model,ckpt_path="/work3/s212495/data/models/resnetnonlinear/240119-0853/ckpts/last.ckpt")
+    trainer.fit(model,ckpt_path="/work3/s212495/data/models/resnetnonlinear/240202-1917/last50ckpts/last.ckpt")
 
 
 if __name__ == "__main__":

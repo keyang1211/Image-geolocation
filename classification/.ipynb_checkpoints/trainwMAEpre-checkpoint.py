@@ -3,7 +3,7 @@ from datetime import datetime
 import json
 import logging
 from pathlib import Path
-
+from collections import OrderedDict
 import yaml
 import torch
 import torch.nn as nn
@@ -44,7 +44,7 @@ class trainwMAEpretrain(pl.LightningModule):
         
         
     def __build_model(self):
-        checkpoint = torch.load("last.ckpt", map_location=torch.device('gpu'))
+        checkpoint = torch.load("/work3/s212495/data/models/MAEpretrained/240202-1826/ckpts/epoch=19-val_loss_epoch=928141.25.ckpt")
         dict_MAE = checkpoint["state_dict"]
         list1 = [one for one in dict_MAE.keys() if one.startswith('encoder.')]
         dict_enc = OrderedDict((key.replace('encoder.', '',1), value) for key, value in dict_MAE.items() if key in list1)
@@ -52,7 +52,7 @@ class trainwMAEpretrain(pl.LightningModule):
         encoder = self.__build_encoder()
         encoder.load_state_dict(dict_enc)
         regressor = torch.nn.Sequential(
-            torch.nn.Linear(hidden_dim, 768),  
+            torch.nn.Linear(self.hidden_dim, 768),  
             torch.nn.ReLU(),  
             torch.nn.Linear(768, 2),
             torch.nn.Tanh()# 输出两个数字（-1 - 1）
@@ -80,7 +80,7 @@ class trainwMAEpretrain(pl.LightningModule):
     
     def forward(self, x: torch.Tensor):
         x,mask,ids_restore = self.encoder(x) #ids_restore不包含clstoken
-        x = x[:,:1,:]  #clstoken
+        x = x[:,0]  #clstoken
         x = self.regressor(x)
         return x
     
@@ -99,14 +99,14 @@ class trainwMAEpretrain(pl.LightningModule):
             output[:, 0] * 90.0,   # 映射到 -90 到 +90 范围
             output[:, 1] * 180.0   # 映射到 -180 到 +180 范围
         ], dim=1)
-        # 检测 output 中是否存在 NaN 值
-        has_nan_output = torch.isnan(output).any().item()
-        if has_nan_output:
-            print(f"There is nan in trainoutput in batch{batch_idx}")
-        # 检测 output_scaled 中是否存在 NaN 值
-        has_nan_output_scaled = torch.isnan(output_scaled).any().item()
-        if has_nan_output_scaled:
-            print(f"There is nan in trainoutput_scaled in batch{batch_idx}")
+        # # 检测 output 中是否存在 NaN 值
+        # has_nan_output = torch.isnan(output).any().item()
+        # if has_nan_output:
+        #     print(f"There is nan in trainoutput in batch{batch_idx}")
+        # # 检测 output_scaled 中是否存在 NaN 值
+        # has_nan_output_scaled = torch.isnan(output_scaled).any().item()
+        # if has_nan_output_scaled:
+        #     print(f"There is nan in trainoutput_scaled in batch{batch_idx}")
         losses = [
             utils_global.vectorized_gc_distance(output_scaled[i][0],output_scaled[i][1], target[0][i],target[1][i])
             for i in range(output.shape[0])
@@ -116,23 +116,23 @@ class trainwMAEpretrain(pl.LightningModule):
         # if has_nan:
         #     print(f"There is nan in list losses in batch{batch_idx}")
        
-        nan_index = next((i for i, loss1 in enumerate(losses) if torch.isnan(loss1).any()), None)
+         # nan_index = next((i for i, loss1 in enumerate(losses) if torch.isnan(loss1).any()), None)
 
-        if nan_index is not None:
-            print(f"NaN value found in losses at index {nan_index} in batch {batch_idx}")
+#         if nan_index is not None:
+#             print(f"NaN value found in losses at index {nan_index} in batch {batch_idx}")
     
-            # 输出output_scaled和target中对应位置的数据
-            problematic_output = output[nan_index]
-            problematic_output_sca = output_scaled[nan_index]
-            problematic_target = [target[0][nan_index],target[1][nan_index]]
-            print(f"Problematic output data: {problematic_output}")
-            print(f"Problematic output_scaled data: {problematic_output_sca}")
-            print(f"Problematic target data: {problematic_target}")
+#             # 输出output_scaled和target中对应位置的数据
+#             problematic_output = output[nan_index]
+#             problematic_output_sca = output_scaled[nan_index]
+#             problematic_target = [target[0][nan_index],target[1][nan_index]]
+#             print(f"Problematic output data: {problematic_output}")
+#             print(f"Problematic output_scaled data: {problematic_output_sca}")
+#             print(f"Problematic target data: {problematic_target}")
 
         loss = sum(losses)
-        has_nan = torch.isnan(loss)
-        if has_nan:
-            print(f"There is nan in total loss in batch{batch_idx}")
+        # has_nan = torch.isnan(loss)
+        # if has_nan:
+        #     print(f"There is nan in total loss in batch{batch_idx}")
         errors = [loss.item() for loss in losses]
         thissize = output.shape[0]
         output = {
@@ -179,13 +179,13 @@ class trainwMAEpretrain(pl.LightningModule):
         
         
         
-        has_nan_output = torch.isnan(output).any().item()
-        if has_nan_output:
-            print("There is nan in valoutput")
-        # 检测 output_scaled 中是否存在 NaN 值
-        has_nan_output_scaled = torch.isnan(output_scaled).any().item()
-        if has_nan_output_scaled:
-            print("There is nan in valoutput_scaled")
+        # has_nan_output = torch.isnan(output).any().item()
+        # if has_nan_output:
+        #     print("There is nan in valoutput")
+        # # 检测 output_scaled 中是否存在 NaN 值
+        # has_nan_output_scaled = torch.isnan(output_scaled).any().item()
+        # if has_nan_output_scaled:
+        #     print("There is nan in valoutput_scaled")
 
         # loss calculation
         losses = [
@@ -226,9 +226,6 @@ class trainwMAEpretrain(pl.LightningModule):
             "ACC2000" : error_2000
         }
         self.log("val_loss_batch", loss)
-        print("-------------valoutput----------")
-        print(output)
-        print("------------------------------------------------------")
         self.validation_step_outputs.append(output)
         return output
     
@@ -311,10 +308,16 @@ class trainwMAEpretrain(pl.LightningModule):
         errors = [loss.item() for loss in losses]
         
         num_samples = len(errors)
-        error_100 = sum([1 for error in errors if error <= 100])
-        error_500 = sum([1 for error in errors if  error <= 500])
-        error_1000 = sum([1 for error in errors if  error <= 1000])
-        error_2000 = sum([1 for error in errors if  error <= 2000])
+        error_100 = sum([1 for error in errors if error <= 25])
+        error_500 = sum([1 for error in errors if  error <= 200])
+        error_1000 = sum([1 for error in errors if  error <= 750])
+        error_2000 = sum([1 for error in errors if  error <= 2500])
+        columns = ['ori_lat', 'ori_lon']
+        ori_cord = pd.DataFrame(target,index=columns).T
+        columns1 = ['pred_lat', 'pred_lon']
+        pred_cord = pd.DataFrame(output_scaled,columns=columns1)
+        distance = pd.DataFrame(errors,columns=["distance"])
+        result = pd.concat([ori_cord[['ori_lat', 'ori_lon']], pred_cord[['pred_lat', 'pred_lon']], distance], axis=1)
 
         output = {
             "batch_loss" : loss,
@@ -323,7 +326,8 @@ class trainwMAEpretrain(pl.LightningModule):
             "num in 100km" : error_100,
             "num in 500km" : error_500,
             "num in 1000km" : error_1000,
-            "num in 2000km" : error_2000
+            "num in 2000km" : error_2000,
+            "result_df" : result
         }
         self.test_outputs.append(output)
         
@@ -340,16 +344,24 @@ class trainwMAEpretrain(pl.LightningModule):
         acc_500 = num_500/total_num
         acc_1000 = num_1000/total_num
         acc_2000 = num_2000/total_num
+        result_list = [x["result_df"] for x in self.test_outputs]
+        result = pd.concat(result_list, axis=0, ignore_index=True)
+        def tensor_element_to_float(t):
+            return float(t.item()) if isinstance(t, torch.Tensor) and t.numel() == 1 else t
+
+        # 使用 applymap 函数应用上述函数
+        result = result.applymap(tensor_element_to_float)
         
         self.test_outputs.clear()
         
-        with open('/work3/s212495/test_results.txt', 'w') as file:
+        with open('/work3/s212495/test_results_MAEVIT.txt', 'w') as file:
             file.write(f"Avg Loss: {avg_loss}\n")
-            file.write(f"Accuracy in 100km: {acc_100}\n")
-            file.write(f"Accuracy in 500km: {acc_500}\n")
-            file.write(f"Accuracy in 1000km: {acc_1000}\n")
-            file.write(f"Accuracy in 2000km: {acc_2000}\n")
+            file.write(f"Accuracy in 25km: {acc_100}\n")
+            file.write(f"Accuracy in 200km: {acc_500}\n")
+            file.write(f"Accuracy in 750km: {acc_1000}\n")
+            file.write(f"Accuracy in 2500km: {acc_2000}\n")
         
+        result.to_csv('/work3/s212495/test_MAEVIT.csv', index=False)
         
         
         

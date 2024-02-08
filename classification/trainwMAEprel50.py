@@ -12,7 +12,7 @@ import torchvision
 import pytorch_lightning as pl
 import pandas as pd
 from classification import utils_global,ViTencoder,MAEpretrain
-from classification.dataset import MsgPackIterableDatasetMultiTargetWithDynLabels,TestsetIterableDataset
+from classification.dataset import MsgPackIterableDatasetMultiTargetWithDynLabels,TestsetIterableDataset,MsgPackIterableDatasetlast50
 
 
 
@@ -44,7 +44,7 @@ class trainwMAEpretrain(pl.LightningModule):
         
         
     def __build_model(self):
-        checkpoint = torch.load("/work3/s212495/data/models/MAEpretrained/240202-1826/ckpts/epoch=19-val_loss_epoch=928141.25.ckpt")
+        checkpoint = torch.load("/work3/s212495/data/models/MAEpretrained/240201-1658/f50ckpts/epoch=26-val_loss_epoch=940799.25.ckpt")
         dict_MAE = checkpoint["state_dict"]
         list1 = [one for one in dict_MAE.keys() if one.startswith('encoder.')]
         dict_enc = OrderedDict((key.replace('encoder.', '',1), value) for key, value in dict_MAE.items() if key in list1)
@@ -319,6 +319,7 @@ class trainwMAEpretrain(pl.LightningModule):
         distance = pd.DataFrame(errors,columns=["distance"])
         result = pd.concat([ori_cord[['ori_lat', 'ori_lon']], pred_cord[['pred_lat', 'pred_lon']], distance], axis=1)
 
+
         output = {
             "batch_loss" : loss,
             "losses" : errors,
@@ -352,17 +353,17 @@ class trainwMAEpretrain(pl.LightningModule):
         # 使用 applymap 函数应用上述函数
         result = result.applymap(tensor_element_to_float)
         
+        
         self.test_outputs.clear()
         
-        with open('/work3/s212495/test_results_MAEVIT.txt', 'w') as file:
+        with open('/work3/s212495/test_results_MAEVITl50.txt', 'w') as file:
             file.write(f"Avg Loss: {avg_loss}\n")
             file.write(f"Accuracy in 25km: {acc_100}\n")
             file.write(f"Accuracy in 200km: {acc_500}\n")
             file.write(f"Accuracy in 750km: {acc_1000}\n")
             file.write(f"Accuracy in 2500km: {acc_2000}\n")
         
-        result.to_csv('/work3/s212495/test_MAEVIT.csv', index=False)
-        
+        result.to_csv('/work3/s212495/test_MAEVIT_l50.csv', index=False)
         
         
     def configure_optimizers(self):
@@ -403,7 +404,7 @@ class trainwMAEpretrain(pl.LightningModule):
             ]
         )
 
-        dataset = MsgPackIterableDatasetMultiTargetWithDynLabels(
+        dataset = MsgPackIterableDatasetlast50(
             path=self.hparams.modelparams.msgpack_train_dir,
             target_mapping=target_mapping,
             key_img_id=self.hparams.modelparams.key_img_id,
@@ -509,8 +510,8 @@ def parse_args():
 
 def main():
     args = parse_args()
-    logging.basicConfig(level=logging.INFO, filename="/work3/s212495/trainwMAEpre.log")
-    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/trainwMAEprelog", name="wMAEprelog")
+    logging.basicConfig(level=logging.INFO, filename="/work3/s212495/trainwMAEprelast50.log")
+    logger = pl.loggers.CSVLogger(save_dir="/work3/s212495/trainwMAEprelog", name="last50wMAEprelog")
     with open(args.config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -525,7 +526,7 @@ def main():
     # init 
     model = trainwMAEpretrain(modelparams=Namespace(**model_params))
 
-    checkpoint_dir = out_dir / "ckpts" 
+    checkpoint_dir = out_dir / "last50ckpts" 
     checkpointer = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_dir,
                                                 filename='{epoch}-{val_loss_epoch:.2f}',
                                                 save_top_k = 3,
