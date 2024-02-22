@@ -1,13 +1,12 @@
-<div align="center">    
- 
+
 # Geolocation Estimation of Photos using a Hierarchical Model and Scene Classification     
 
 
 
 
-### Reproduce Results
+## Reproduce Results
 
-#### Test on Already Trained Model
+### Test on Already Trained Model
 The (list of) image files for testing can be found on the following links:
 * Im2GPS: http://graphics.cs.cmu.edu/projects/im2gps/ (can be downloaded automatically)
 * Im2GPS3k: https://github.com/lugiavn/revisiting-im2gps/
@@ -46,7 +45,7 @@ Available argparse paramters:
 ```
 
 
-#### Training from Scratch
+### Training from Scratch
 We provide a complete training script which is written in [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning) and report all hyper-paramters used for the provided model. Furthermore, a script is given to download and pre-process the images that are used for training and validiation.
 
 1) Download training and validation images
@@ -77,11 +76,10 @@ python -m classification.train_base --config config/baseM.yml
 ```
 
 
-### Requirements
+## Requirements
 All requirements are listed in the `environment.yml`. We recomment to use [*conda*](https://docs.conda.io/en/latest/) to install all required packages in an individual environment.
 ```bash
-# clone this repo
-git clone https://github.com/TIBHannover/GeoEstimation.git && cd GeoEstimation
+
 # install dependencies
 conda env create -f environment.yml 
 conda activate geoestimation-github-pytorch
@@ -94,6 +92,3 @@ wget https://raw.githubusercontent.com/TIBHannover/GeoEstimation/original_tf/geo
 
 
 
-## Licence
-This work is published under the GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007. For details please check the
-LICENSE file in the repository.
