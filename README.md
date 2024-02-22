@@ -1,5 +1,5 @@
 
-# Geolocation Estimation of Photos using a Hierarchical Model and Scene Classification     
+# Geolocation Estimation of Photos   
 
 
 
