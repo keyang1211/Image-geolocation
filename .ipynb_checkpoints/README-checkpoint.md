@@ -52,8 +52,7 @@ We provide a complete training script which is written in [PyTorch Lightning](ht
     - We provide a script to download the images given a list of URLs
     - Due to no longer publicly available images, the size of the dataset might be smaller than the original.
     - We also store the images in chunks using [MessagePack](https://msgpack.org/) to speed-up the training process (similar to multiple TFRecord files)
-2) Given multiple s2 partitionings (e.g. coarse, middle, fine from the paper), the respective classes are assigned to each image on both datasets.
-3) Training and hyper-paramters: All hyper-paramters can be configured in `configs/baseM.yml` as well as paramters from PyTorch Lightning [`Trainer`](https://pytorch-lightning.readthedocs.io/en/latest/trainer.html#trainer-class-api) class.
+2) Training and hyper-paramters: All hyper-paramters can be configured in `configs/*.yml` as well as paramters from PyTorch Lightning [`Trainer`](https://pytorch-lightning.readthedocs.io/en/latest/trainer.html#trainer-class-api) class.
 
 
 Necessary steps:
@@ -67,12 +66,11 @@ python download_images.py --output resources/images/yfcc25600 --url_csv resource
 # assign cell(s) for each image using the original meta information
 wget https://github.com/TIBHannover/GeoEstimation/releases/download/v1.0/mp16_places365.csv -O resources/mp16_places365.csv
 wget https://github.com/TIBHannover/GeoEstimation/releases/download/pytorch/yfcc25600_places365.csv -O resources/yfcc25600_places365.csv
-python partitioning/assign_classes.py
 # remove images that were not downloaded 
 python filter_by_downloaded_images.py
 
 # train geo model from scratch
-python -m classification.train_base --config config/baseM.yml
+python -m classification.train_resnet_nonlinear 
 ```
 
 
@@ -83,11 +81,8 @@ All requirements are listed in the `environment.yml`. We recomment to use [*cond
 # install dependencies
 conda env create -f environment.yml 
 conda activate geoestimation-github-pytorch
-# download pre-calculated parititonings
-mkdir -p resources/s2_cells
-wget https://raw.githubusercontent.com/TIBHannover/GeoEstimation/original_tf/geo-cells/cells_50_5000.csv -O resources/s2_cells/cells_50_5000.csv
-wget https://raw.githubusercontent.com/TIBHannover/GeoEstimation/original_tf/geo-cells/cells_50_2000.csv -O resources/s2_cells/cells_50_2000.csv
-wget https://raw.githubusercontent.com/TIBHannover/GeoEstimation/original_tf/geo-cells/cells_50_1000.csv -O resources/s2_cells/cells_50_1000.csv
+
+
 ```
 
 
